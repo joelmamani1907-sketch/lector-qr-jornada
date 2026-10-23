@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lector QR - Jornada</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef4fa;
+      color: #173653;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      max-width: 440px;
+      margin: 20px auto;
+      background: white;
+      padding: 22px;
+      border-radius: 16px;
+      box-shadow: 0 3px 14px #0001;
+      text-align: center;
+    }
+    h2 { color: #173653; }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #173653;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    #reader { margin-top: 18px; }
+    #estado { margin-top: 16px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Acreditación de la Jornada</h2>
+    <p>Enfocá la cámara al código QR del participante.</p>
+    <div id="reader"></div>
+    <p id="estado">Preparado para escanear.</p>
+    <button id="iniciar">Activar cámara</button>
+  </div>
+
+  <script>
+    const URL_ACREDITACION =
+      "https://script.google.com/macros/s/AKfycbyCvDB0Xe7CgrVNjKp9Eg97UdA8vtL10QbKSItMDZcWCtv_p5nREw4uW15fcI9LVnnQjA/exec";
+
+    let lector = null;
+    let procesando = false;
+
+    document.getElementById("iniciar").addEventListener("click", async () => {
+      const estado = document.getElementById("estado");
+      estado.textContent = "Solicitando acceso a la cámara...";
+
+      try {
+        if (!lector) {
+          lector = new Html5Qrcode("reader");
+        }
+
+        await lector.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 230, height: 230 } },
+          async (texto) => {
+            if (procesando) return;
+            procesando = true;
+
+            try {
+              await lector.stop();
+            } catch (e) {}
+
+            estado.textContent = "QR detectado. Abriendo acreditación...";
+            const destino = URL_ACREDITACION +
+              "?id=" + encodeURIComponent(texto.trim());
+
+            window.location.href = destino;
+          },
+          () => {}
+        );
+
+        estado.textContent = "Cámara activa. Enfocá el QR.";
+        document.getElementById("iniciar").hidden = true;
+      } catch (e) {
+        estado.textContent =
+          "No se pudo activar la cámara: " +
+          (e.message || e) +
+          ". Verificá el permiso de cámara y abrí el enlace en Chrome.";
+      }
+    });
+  </script>
+</body>
+</html>
